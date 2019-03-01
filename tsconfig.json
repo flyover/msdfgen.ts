@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES2016",
+    "module": "system",
+    "moduleResolution": "node",
+    "inlineSourceMap": true,
+    "strict": true
+  },
+  "include": [
+    "core/*.ts"
+  ]
+}

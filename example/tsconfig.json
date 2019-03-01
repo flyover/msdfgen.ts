@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2016",
+    "module": "system",
+    "moduleResolution": "node",
+    "inlineSourceMap": true,
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "msdfgen": [ "../core" ],
+      "msdfgen/*": [ "../core/*" ]
+    }
+  },
+  "files": [
+    "main.ts"
+  ]
+}
