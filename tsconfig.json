@@ -4,9 +4,16 @@
     "module": "system",
     "moduleResolution": "node",
     "inlineSourceMap": true,
-    "strict": true
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "msdfgen-core": [ "core" ],
+      "msdfgen-core/*": [ "core/*" ]
+    }
   },
-  "include": [
-    "core/*.ts"
+  "files": [
+    "start-node.ts",
+    "start-html.ts",
+    "main.ts"
   ]
 }
