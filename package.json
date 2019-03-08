@@ -2,23 +2,22 @@
   "name": "msdfgen.ts",
   "version": "1.0.0",
   "description": "TypeScript port of msdfgen",
-  "main": "dist/msdfgen.umd.js",
+  "main": "index.js",
   "types": "core/index.ts",
   "scripts": {
-    "build": "npm run build-msdfgen",
-    "clean": "npm run clean-msdfgen",
-    "watch": "npm run watch-example",
-    "start": "npm run start-example",
-    "dist": "rollup -c",
-    "build-msdfgen": "tsc",
-    "watch-msdfgen": "tsc --watch",
-    "clean-msdfgen": "echo TODO: clean-msdfgen",
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "echo TODO: clean",
+    "start": "npm run start-node",
+    "start-node": "node index.js",
+    "start-html": "echo http://localhost:8080/index.html && http-server -c-1 -o",
     "build-example": "tsc -p example",
     "watch-example": "tsc -p example --watch",
     "clean-example": "echo TODO: clean-example",
-    "start-example": "npm run start-example-html",
-    "start-example-html": "echo http://localhost:8080/example/index.html && http-server -c-1 -o",
+    "start-example": "npm run start-example-node",
     "start-example-node": "node example/index.js",
+    "start-example-html": "echo http://localhost:8080/example/index.html && http-server -c-1 -o",
+    "dist": "rollup -c",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -32,19 +31,20 @@
   },
   "homepage": "https://github.com/flyover/msdfgen.ts#readme",
   "dependencies": {
-    "@types/emscripten": "0.0.31",
     "@types/node": "^10.12.18",
-    "@types/systemjs": "^0.20.6"
+    "@types/systemjs": "^0.20.6",
+    "commander": "^2.19.0",
+    "freetype-js": "git+https://git@github.com/flyover/freetype-js.git",
+    "libpng-js": "git+https://git@github.com/flyover/libpng-js.git",
+    "source-map-support": "^0.5.10",
+    "systemjs": "^0.21.6"
   },
   "devDependencies": {
     "http-server": "^0.11.1",
-    "node-fetch": "^2.2.0",
     "rollup": "^0.68.2",
-    "rollup-plugin-commonjs": "^9.1.6",
+    "rollup-plugin-commonjs": "^9.2.1",
     "rollup-plugin-node-builtins": "^2.1.2",
     "rollup-plugin-typescript2": "^0.18.1",
-    "source-map-support": "^0.5.10",
-    "systemjs": "^0.21.6",
     "typescript": "^3.0.1"
   }
 }
