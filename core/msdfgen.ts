@@ -13,6 +13,12 @@ function refnew<T>(val: T): Ref<T> { return [val]; }
 function refget<T>(ref: Ref<T>): T { return ref[0]; }
 function refset<T>(ref: Ref<T>, val: T): Ref<T> { ref[0] = val; return ref; }
 
+export enum Type {
+  SDF = "sdf",
+  PSDF = "psdf",
+  MSDF = "msdf"
+}
+
 class MultiDistance {
   public r: number = 0;
   public g: number = 0;
