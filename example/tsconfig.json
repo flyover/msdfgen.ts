@@ -7,8 +7,8 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "msdfgen": [ "../core" ],
-      "msdfgen/*": [ "../core/*" ]
+      "msdfgen-core": [ "../core" ],
+      "msdfgen-core/*": [ "../core/*" ]
     }
   },
   "files": [

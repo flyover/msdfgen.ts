@@ -1,4 +1,4 @@
-import * as msdfgen from "msdfgen";
+import * as msdfgen from "msdfgen-core";
 
 export default async function main(): Promise<void> {
   console.log("msdfgen version", msdfgen.VERSION);

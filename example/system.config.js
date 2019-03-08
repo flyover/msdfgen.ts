@@ -1,8 +1,7 @@
 SystemJS.config({
-    map: {
-        "msdfgen": "../core",
-    },
-    packages: {
-        "msdfgen": { main: "index.js", },
-    }
+    map: { "msdfgen-core": "../core" },
+    packages: { "msdfgen-core": { main: "index.js", } }
+});
+SystemJS.config({
+    packages: { ".": { defaultExtension: "js" } }
 });
