@@ -1,4 +1,4 @@
-System.register(["freetype-js", "libpng-js", "./main"], function (exports_1, context_1) {
+System.register(["vue", "freetype-js", "libpng-js", "./main"], function (exports_1, context_1) {
     "use strict";
     var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
         return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,7 +8,7 @@ System.register(["freetype-js", "libpng-js", "./main"], function (exports_1, con
             step((generator = generator.apply(thisArg, _arguments || [])).next());
         });
     };
-    var FT, PNG, main;
+    var vue_1, FT, PNG, main;
     var __moduleName = context_1 && context_1.id;
     function start() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -16,81 +16,110 @@ System.register(["freetype-js", "libpng-js", "./main"], function (exports_1, con
             yield PNG.default(); // initialize Emscripten module
             const package_response = yield fetch("./package.json");
             const package_json = JSON.parse(yield package_response.text());
-            const options_div = document.body.appendChild(document.createElement("div"));
-            options_div.id = "options";
-            const label_name = options_div.appendChild(document.createElement("span"));
-            label_name.innerHTML = package_json.name;
-            const label_version = options_div.appendChild(document.createElement("span"));
-            label_version.innerHTML = package_json.version;
-            const option_verbose = options_div.appendChild(document.createElement("input"));
-            option_verbose.type = "checkbox";
-            option_verbose.checked = false;
-            const option_ttf_path = options_div.appendChild(document.createElement("input"));
-            option_ttf_path.type = "url";
-            option_ttf_path.value = "Consolas.ttf";
-            const option_size = options_div.appendChild(document.createElement("input"));
-            option_size.type = "number";
-            option_size.valueAsNumber = main.DEFAULT_SIZE;
-            const option_charset = options_div.appendChild(document.createElement("input"));
-            option_charset.type = "text";
-            option_charset.value = main.DEFAULT_CHARSET;
-            const option_types = options_div.appendChild(document.createElement("span"));
-            for (const type in main.msdfgen.Type) {
-                const option_type = option_types.appendChild(document.createElement("input"));
-                option_type.type = "radio";
-                option_type.name = "type";
-                option_type.value = main.msdfgen.Type[type];
-                option_type.checked = main.msdfgen.Type[type] === main.DEFAULT_TYPE;
-                const label_type = option_types.appendChild(document.createElement("label"));
-                label_type.innerHTML = `Type.${type}`;
-            }
-            const option_range = options_div.appendChild(document.createElement("input"));
-            option_range.type = "number";
-            option_range.valueAsNumber = main.DEFAULT_RANGE;
-            const actions_div = document.body.appendChild(document.createElement("div"));
-            actions_div.id = "actions";
-            const action_start = actions_div.appendChild(document.createElement("input"));
-            action_start.type = "button";
-            action_start.value = "start";
-            const action_clear = actions_div.appendChild(document.createElement("input"));
-            action_clear.type = "button";
-            action_clear.value = "clear";
-            const action_progress = actions_div.appendChild(document.createElement("progress"));
-            action_progress.value = 0;
-            const results_div = document.body.appendChild(document.createElement("div"));
-            results_div.id = "results";
-            const result_json = results_div.appendChild(document.createElement("textarea"));
-            result_json.hidden = true;
-            const result_bitmap = results_div.appendChild(document.createElement("canvas"));
-            result_bitmap.hidden = true;
+            const data = {
+                // message: "Hello Vue!",
+                package: package_json,
+                options: {
+                    verbose: false,
+                    font: "Consolas.ttf",
+                    size: main.DEFAULT_SIZE,
+                    charset: main.DEFAULT_CHARSET,
+                    types: enum_options(main.msdfgen.Type), type: main.DEFAULT_TYPE,
+                    range: main.DEFAULT_RANGE,
+                    angle_threshold: main.DEFAULT_ANGLE_THRESHOLD,
+                    msdf_edge_threshold: main.DEFAULT_MSDF_EDGE_THRESHOLD,
+                }
+            };
+            const methods = {
+                start: (e) => { console.log("start", e); },
+                cancel: (e) => { console.log("cancel", e); },
+                clear: (e) => { console.log("clear", e); },
+            };
+            const html = String.raw;
+            const template = html `
+    <div id="app">
+      <!-- {{ message }} -->
+      <div id="package">
+        {{ package.name }} version {{ package.version }}
+      </div>
+      <!-- <form> -->
+      <div id="options">
+        <div>Options</div>
+        <label for="verbose">
+          <input type="checkbox" id="verbose" v-model="options.verbose" />
+          <span class="label-body">Verbose</span>
+        </label>
+        <label for="font">Font</label>
+        <input type="text" class="u-full-width" id="font" v-model="options.font" />
+        <label for="size">Size</label>
+        <input type="number" id="size" v-model="options.size" />
+        <label for="charset">Character Set</label>
+        <input type="text" class="u-full-width" id="charset" v-model="options.charset" />
+        <label for="type">Type</label>
+        <select id="type" v-model="options.type">
+          <option v-for="type in options.types" v-bind:value="type.value">Type.{{ type.text }}</option>
+        </select>
+        <label for="range">Range</label>
+        <input type="number" id="range" v-model="options.range" />
+        <label for="angle_threshold">Angle Threshold</label>
+        <input type="number" id="angle_threshold" v-model="options.angle_threshold" />
+        <label for="msdf_edge_threshold">MSDF Edge Threshold</label>
+        <input type="number" id="msdf_edge_threshold" v-model="options.msdf_edge_threshold" />
+        <!-- <input class="button-primary" type="submit" value="Submit"> -->
+      </div>
+      <!-- </form> -->
+      <div id="actions">
+        <button id="start" v-on:click="start">Start</button>
+        <button id="cancel" v-on:click="cancel">Cancel</button>
+        <button id="clear" v-on:click="clear">Clear</button>
+        <progress id="progress" value="0"></progress>
+      </div>
+      <div id="results">
+        <div>Results</div>
+        <textarea id="json"></textarea>
+        <canvas id="bitmap"></canvas>
+      </div>
+    </div>
+  `;
+            const app = new vue_1.default({ el: "#app", data, methods, template });
+            // const app_div: HTMLDivElement = document.querySelector("div#app") as HTMLDivElement;
+            // app_div.hidden = false;
+            const actions_div = app.$el.querySelector("div#actions");
+            const action_start = actions_div.querySelector("button#start");
+            const action_cancel = actions_div.querySelector("button#cancel");
+            const action_clear = actions_div.querySelector("button#clear");
+            const action_progress = actions_div.querySelector("progress#progress");
+            const results_div = app.$el.querySelector("div#results");
+            const result_json = results_div.querySelector("textarea#json");
+            const result_bitmap = results_div.querySelector("canvas#bitmap");
             action_start.addEventListener("click", () => __awaiter(this, void 0, void 0, function* () {
                 action_start.disabled = true;
                 action_clear.disabled = true;
                 action_progress.value = 0;
-                const verbose = option_verbose.checked;
+                const verbose = app.options.verbose;
+                const font_path = app.options.font;
+                const font_resp = yield fetch(font_path);
+                const font_file = new Uint8Array(yield font_resp.arrayBuffer());
+                const size = app.options.size;
+                const charset = app.options.charset;
+                const type = app.options.type;
+                const range = app.options.range;
+                let cancel = false;
                 const progress = (completed, total) => __awaiter(this, void 0, void 0, function* () {
                     action_progress.max = total;
                     action_progress.value = Math.round(action_progress.max * completed / total);
-                    yield sleep(); // allow page refresh
-                    return false; // return true to stop
+                    yield blink(); // allow refresh
+                    return cancel; // return true to stop
                 });
-                const ttf_path = option_ttf_path.value;
-                const response = yield fetch(ttf_path);
-                const ttf_file = new Uint8Array(yield response.arrayBuffer());
-                const size = option_size.valueAsNumber;
-                const charset = option_charset.value;
-                const option_type = option_types.querySelector("input[name='type']:checked");
-                if (option_type === null) {
-                    throw new Error();
-                }
-                const type = option_type.value;
-                const range = option_range.valueAsNumber;
-                const options = { progress, verbose, ttf_file, size, charset, type, range };
+                const options = { progress, verbose, font_file, size, charset, type, range };
+                const listen_cancel = () => { cancel = true; };
+                action_cancel.addEventListener("click", listen_cancel);
                 const results = yield main.default(options);
-                const json_path = ttf_path.replace(/\.(ttf|otf)$/i, ".json");
-                const png_path = ttf_path.replace(/\.(ttf|otf)$/i, ".png");
+                action_cancel.removeEventListener("click", listen_cancel);
+                const json_path = font_path.replace(/\.(ttf|otf)$/i, ".json");
+                const bitmap_path = font_path.replace(/\.(ttf|otf)$/i, ".png");
                 if (results.json) {
-                    results.json.page.name = png_path.split("/").pop() || png_path; // relative to json directory
+                    results.json.page.name = bitmap_path.split("/").pop() || bitmap_path; // relative to json directory
                     result_json.value = JSON.stringify(results.json, null, "\t");
                     result_json.hidden = false;
                 }
@@ -109,31 +138,50 @@ System.register(["freetype-js", "libpng-js", "./main"], function (exports_1, con
                     result_bitmap.hidden = false;
                 }
                 if (verbose) {
-                    console.log(png_path, results.bitmap.width, results.bitmap.height);
+                    console.log(bitmap_path, results.bitmap.width, results.bitmap.height);
                 }
                 action_start.disabled = false;
                 action_clear.disabled = false;
                 action_progress.value = 0;
             }));
-            action_clear.addEventListener("click", () => __awaiter(this, void 0, void 0, function* () {
+            action_clear.addEventListener("click", () => {
                 result_json.hidden = true;
                 result_bitmap.hidden = true;
-            }));
+            });
         });
     }
-    function sleep(time = 0) {
+    function enum_options(_enum) {
+        const options = [];
+        for (const key in _enum) {
+            const text = key;
+            const value = _enum[key];
+            options.push({ text, value });
+        }
+        return options;
+    }
+    function blink() {
         return __awaiter(this, void 0, void 0, function* () {
-            const start = Date.now() / 1000; // seconds
             return new Promise((resolve) => {
-                setTimeout(() => {
-                    const end = Date.now() / 1000; // seconds
-                    resolve(Math.max(0, time - (end - start)));
-                }, time * 1000);
+                if (typeof requestAnimationFrame === "function") {
+                    requestAnimationFrame(resolve);
+                }
+                else if (typeof setImmediate === "function") {
+                    setImmediate(resolve);
+                }
+                else if (typeof setTimeout === "function") {
+                    setTimeout(resolve);
+                }
+                else {
+                    resolve();
+                }
             });
         });
     }
     return {
         setters: [
+            function (vue_1_1) {
+                vue_1 = vue_1_1;
+            },
             function (FT_1) {
                 FT = FT_1;
             },
@@ -149,4 +197,4 @@ System.register(["freetype-js", "libpng-js", "./main"], function (exports_1, con
         }
     };
 });
-//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoic3RhcnQtaHRtbC5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbInN0YXJ0LWh0bWwudHMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7O0lBV0EsU0FBZSxLQUFLOztZQUNsQixNQUFNLEVBQUUsQ0FBQyxPQUFPLEVBQUUsQ0FBQyxDQUFDLCtCQUErQjtZQUNuRCxNQUFNLEdBQUcsQ0FBQyxPQUFPLEVBQUUsQ0FBQyxDQUFDLCtCQUErQjtZQUVwRCxNQUFNLGdCQUFnQixHQUFhLE1BQU0sS0FBSyxDQUFDLGdCQUFnQixDQUFDLENBQUM7WUFDakUsTUFBTSxZQUFZLEdBQWdCLElBQUksQ0FBQyxLQUFLLENBQUMsTUFBTSxnQkFBZ0IsQ0FBQyxJQUFJLEVBQUUsQ0FBQyxDQUFDO1lBRTVFLE1BQU0sV0FBVyxHQUFtQixRQUFRLENBQUMsSUFBSSxDQUFDLFdBQVcsQ0FBQyxRQUFRLENBQUMsYUFBYSxDQUFDLEtBQUssQ0FBQyxDQUFDLENBQUM7WUFDN0YsV0FBVyxDQUFDLEVBQUUsR0FBRyxTQUFTLENBQUM7WUFFM0IsTUFBTSxVQUFVLEdBQW9CLFdBQVcsQ0FBQyxXQUFXLENBQUMsUUFBUSxDQUFDLGFBQWEsQ0FBQyxNQUFNLENBQUMsQ0FBQyxDQUFDO1lBQzVGLFVBQVUsQ0FBQyxTQUFTLEdBQUcsWUFBWSxDQUFDLElBQUksQ0FBQztZQUV6QyxNQUFNLGFBQWEsR0FBb0IsV0FBVyxDQUFDLFdBQVcsQ0FBQyxRQUFRLENBQUMsYUFBYSxDQUFDLE1BQU0sQ0FBQyxDQUFDLENBQUM7WUFDL0YsYUFBYSxDQUFDLFNBQVMsR0FBRyxZQUFZLENBQUMsT0FBTyxDQUFDO1lBRS9DLE1BQU0sY0FBYyxHQUFxQixXQUFXLENBQUMsV0FBVyxDQUFDLFFBQVEsQ0FBQyxhQUFhLENBQUMsT0FBTyxDQUFDLENBQUMsQ0FBQztZQUNsRyxjQUFjLENBQUMsSUFBSSxHQUFHLFVBQVUsQ0FBQztZQUNqQyxjQUFjLENBQUMsT0FBTyxHQUFHLEtBQUssQ0FBQztZ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
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoic3RhcnQtaHRtbC5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbInN0YXJ0LWh0bWwudHMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7O0lBT0EsU0FBZSxLQUFLOztZQUNsQixNQUFNLEVBQUUsQ0FBQyxPQUFPLEVBQUUsQ0FBQyxDQUFDLCtCQUErQjtZQUNuRCxNQUFNLEdBQUcsQ0FBQyxPQUFPLEVBQUUsQ0FBQyxDQUFDLCtCQUErQjtZQUVwRCxNQUFNLGdCQUFnQixHQUFhLE1BQU0sS0FBSyxDQUFDLGdCQUFnQixDQUFDLENBQUM7WUFDakUsTUFBTSxZQUFZLEdBQWdCLElBQUksQ0FBQyxLQUFLLENBQUMsTUFBTSxnQkFBZ0IsQ0FBQyxJQUFJLEVBQUUsQ0FBQyxDQUFDO1lBRTVFLE1BQU0sSUFBSSxHQUFZO2dCQUNwQix5QkFBeUI7Z0JBQ3pCLE9BQU8sRUFBRSxZQUFZO2dCQUNyQixPQUFPLEVBQUU7b0JBQ1AsT0FBTyxFQUFFLEtBQUs7b0JBQ2QsSUFBSSxFQUFFLGNBQWM7b0JBQ3BCLElBQUksRUFBRSxJQUFJLENBQUMsWUFBWTtvQkFDdkIsT0FBTyxFQUFFLElBQUksQ0FBQyxlQUFlO29CQUM3QixLQUFLLEVBQUUsWUFBWSxDQUFDLElBQUksQ0FBQyxPQUFPLENBQUMsSUFBSSxDQUFDLEVBQUUsSUFBSSxFQUFFLElBQUksQ0FBQyxZQUFZO29CQUMvRCxLQUFLLEVBQUUsSUFBSSxDQUFDLGFBQWE7b0JBQ3pCLGVBQWUsRUFBRSxJQUFJLENBQUMsdUJBQXVCO29CQUM3QyxtQkFBbUIsRUFBRSxJQUFJLENBQUMsMkJBQTJCO2lCQUN0RDthQUNGLENBQUE7WUFFRCxNQUFNLE9BQU8sR0FBZTtnQkFDMUIsS0FBSyxFQUFFLENBQUMsQ0FBYSxFQUFRLEVBQUUsR0FBRyxPQUFPLENBQUMsR0FBRyxDQUFDLE9BQU8sRUFBRSxDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUM7Z0JBQzVELE1BQU0sRUFBRSxDQUFDLENBQWEsRUFBUSxFQUFFLEdBQUcsT0FBTyxDQUFDLEdBQUcsQ0FBQyxRQUFRLEVBQUUsQ0FBQyxDQUFDLENBQUMsQ0FBQyxDQUFDO2dCQUM5RCxLQUFLLEVBQUUsQ0FBQyxDQUFhLEVBQVEsRUFBRSxHQUFHLE9BQU8sQ0FBQyxHQUFHLENBQUMsT0FBTyxFQUFFLENBQUMsQ0FBQyxDQUFDLENBQUMsQ0FBQzthQUM3RCxDQUFBO1lBRUQsTUFBTSxJQUFJLEdBQUcsTUFBTSxDQUFDLEdBQUcsQ0FBQztZQUV4QixNQUFNLFFBQVEsR0FBVyxJQUFJLENBQUE7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0dBNEM1QixDQUFDO1lBRUYsTUFBTSxHQUFHLEdBQUcsSUFBSSxhQUFHLENBQUMsRUFBRSxFQUFFLEVBQUUsTUFBTSxFQUFFLElBQUksRUFBRSxPQUFPLEVBQUUsUUFBUSxFQUFFLENBQUMsQ0FBQztZQUU3RCx1RkFBdUY7WUFDdkYsMEJBQTBCO1lBRTFCLE1BQU0sV0FBVyxHQUFtQixHQUFHLENBQUMsR0FBRyxDQUFDLGFBQWEsQ0FBQyxhQUFhLENBQW1CLENBQUM7WUFDM0YsTUFBTSxZQUFZLEdBQXNCLFdBQVcsQ0FBQyxhQUFhLENBQUMsY0FBYyxDQUFzQixDQUFDO1lBQ3ZHLE1BQU0sYUFBYSxHQUFzQixXQUFXLENBQUMsYUFBYSxDQUFDLGVBQWUsQ0FBc0IsQ0FBQztZQUN6RyxNQUFNLFlBQVksR0FBc0IsV0FBVyxDQUFDLGFBQWEsQ0FBQyxjQUFjLENBQXNCLENBQUM7WUFDdkcsTUFBTSxlQUFlLEdBQXdCLFdBQVcsQ0FBQyxhQUFhLENBQUMsbUJBQW1CLENBQXdCLENBQUM7WUFFbkgsTUFBTSxXQUFXLEdBQW1CLEdBQUcsQ0FBQyxHQUFHLENBQUMsYUFBYSxDQUFDLGFBQWEsQ0FBbUIsQ0FBQztZQUMzRixNQUFNLFdBQVcsR0FBd0IsV0FBVyxDQUFDLGFBQWEsQ0FBQyxlQUFlLENBQXdCLENBQUM7WUFDM0csTUFBTSxhQUFhLEdBQXNCLFdBQVcsQ0FBQyxhQUFhLENBQUMsZUFBZSxDQUFzQixDQUFDO1lBRXpHLFlBQVksQ0FBQyxnQkFBZ0IsQ0FBQyxPQUFPLEVBQUUsR0FBd0IsRUFBRTtnQkFDL0QsWUFBWSxDQUFDLFFBQVEsR0FBRyxJQUFJLENBQUM7Z0JBQzdCLFlBQVksQ0FBQyxRQUFRLEdBQUcsSUFBSSxDQUFDO2dCQUM3QixlQUFlLENBQUMsS0FBSyxHQUFHLENBQUMsQ0FBQztnQkFFMUIsTUFBTSxPQUFPLEdBQVksR0FBRyxDQUFDLE9BQU8sQ0FBQyxPQUFPLENBQUM7Z0JBQzdDLE1BQU0sU0FBUyxHQUFXLEdBQUcsQ0FBQyxPQUFPLENBQUMsSUFBSSxDQUFDO2dCQUMzQyxNQUFNLFNBQVMsR0FBYSxNQUFNLEtBQUssQ0FBQyxTQUFTLENBQUMsQ0FBQztnQkFDbkQsTUFBTSxTQUFTLEdBQWUsSUFBSSxVQUFVLENBQUMsTUFBTSxTQUFTLENBQUMsV0FBVyxFQUFFLENBQUMsQ0FBQztnQkFDNUUsTUFBTSxJQUFJLEdBQVcsR0FBRyxDQUFDLE9BQU8sQ0FBQyxJQUFJLENBQUM7Z0JBQ3RDLE1BQU0sT0FBTyxHQUFXLEdBQUcsQ0FBQyxPQUFPLENBQUMsT0FBTyxDQUFDO2dCQUM1QyxNQUFNLElBQUksR0FBc0IsR0FBRyxDQUFDLE9BQU8sQ0FBQyxJQUFJLENBQUM7Z0JBQ2pELE1BQU0sS0FBSyxHQUFXLEdBQUcsQ0FBQyxPQUFPLENBQUMsS0FBSyxDQUFDO2dCQUV4QyxJQUFJLE1BQU0sR0FBWSxLQUFLLENBQUM7Z0JBRTVCLE1BQU0sUUFBUSxHQUFrQixDQUFPLFNBQWlCLEVBQUUsS0FBYSxFQUFvQixFQUFFO29CQUMzRixlQUFlLENBQUMsR0FBRyxHQUFHLEtBQUssQ0FBQztvQkFDNUIsZUFBZSxDQUFDLEtBQUssR0FBRyxJQUFJLENBQUMsS0FBSyxDQUFDLGVBQWUsQ0FBQyxHQUFHLEdBQUcsU0FBUyxHQUFHLEtBQUssQ0FBQyxDQUFDO29CQUM1RSxNQUFNLEtBQUssRUFBRSxDQUFDLENBQUMsZ0JBQWdCO29CQUMvQixPQUFPLE1BQU0sQ0FBQyxDQUFDLHNCQUFzQjtnQkFDdkMsQ0FBQyxDQUFBLENBQUM7Z0JBRUYsTUFBTSxPQUFPLEdBQWlCLEVBQUUsUUFBUSxFQUFFLE9BQU8sRUFBRSxTQUFTLEVBQUUsSUFBSSxFQUFFLE9BQU8sRUFBRSxJQUFJLEVBQUUsS0FBSyxFQUFFLENBQUM7Z0JBRTNGLE1BQU0sYUFBYSxHQUFrQixHQUFTLEVBQUUsR0FBRyxNQUFNLEdBQUcsSUFBSSxDQUFDLENBQUMsQ0FBQyxDQUFDO2dCQUNwRSxhQUFhLENBQUMsZ0JBQWdCLENBQUMsT0FBTyxFQUFFLGFBQWEsQ0FBQyxDQUFDO2dCQUV2RCxNQUFNLE9BQU8sR0FBaUIsTUFBTSxJQUFJLENBQUMsT0FBTyxDQUFDLE9BQU8sQ0FBQyxDQUFDO2dCQUUxRCxhQUFhLENBQUMsbUJBQW1CLENBQUMsT0FBTyxFQUFFLGFBQWEsQ0FBQyxDQUFDO2dCQUUxRCxNQUFNLFNBQVMsR0FBVyxTQUFTLENBQUMsT0FBTyxDQUFDLGVBQWUsRUFBRSxPQUFPLENBQUMsQ0FBQztnQkFDdEUsTUFBTSxXQUFXLEdBQVcsU0FBUyxDQUFDLE9BQU8sQ0FBQyxlQUFlLEVBQUUsTUFBTSxDQUFDLENBQUM7Z0JBRXZFLElBQUksT0FBTyxDQUFDLElBQUksRUFBRTtvQkFDaEIsT0FBTyxDQUFDLElBQUksQ0FBQyxJQUFJLENBQUMsSUFBSSxHQUFHLFdBQVcsQ0FBQyxLQUFLLENBQUMsR0FBRyxDQUFDLENBQUMsR0FBRyxFQUFFLElBQUksV0FBVyxDQUFDLENBQUMsNkJBQTZCO29CQUNuRyxXQUFXLENBQUMsS0FBSyxHQUFHLElBQUksQ0FBQyxTQUFTLENBQUMsT0FBTyxDQUFDLElBQUksRUFBRSxJQUFJLEVBQUUsSUFBSSxDQUFDLENBQUM7b0JBQzdELFdBQVcsQ0FBQyxNQUFNLEdBQUcsS0FBSyxDQUFDO2lCQUM1QjtnQkFDRCxJQUFJLE9BQU8sRUFBRTtvQkFBRSxPQUFPLENBQUMsR0FBRyxDQUFDLFNBQVMsRUFBRSxPQUFPLENBQUMsSUFBSSxDQUFDLElBQUksQ0FBQyxJQUFJLENBQUMsQ0FBQztpQkFBRTtnQkFFaEUsSUFBSSxPQUFPLENBQUMsTUFBTSxDQUFDLEtBQUssR0FBRyxDQUFDLElBQUksT0FBTyxDQUFDLE1BQU0sQ0FBQyxNQUFNLEdBQUcsQ0FBQyxFQUFFO29CQUN6RCxhQUFhLENBQUMsS0FBSyxDQUFDLEtBQUssR0FBRyxHQUFHLGFBQWEsQ0FBQyxLQUFLLEdBQUcsT0FBTyxDQUFDLE1BQU0sQ0FBQyxLQUFLLElBQUksQ0FBQztvQkFDOUUsYUFBYSxDQUFDLEtBQUssQ0FBQyxNQUFNLEdBQUcsR0FBRyxhQUFhLENBQUMsTUFBTSxHQUFHLE9BQU8sQ0FBQyxNQUFNLENBQUMsTUFBTSxJQUFJLENBQUM7b0JBQ2pGLE1BQU0sR0FBRyxHQUFvQyxhQUFhLENBQUMsVUFBVSxDQUFDLElBQUksQ0FBQyxDQUFDO29CQUM1RSxJQUFJLEdBQUcsS0FBSyxJQUFJLEVBQUU7d0JBQ2hCLE1BQU0sVUFBVSxHQUFjLEdBQUcsQ0FBQyxZQUFZLENBQUMsQ0FBQyxFQUFFLENBQUMsRUFBRSxHQUFHLENBQUMsTUFBTSxDQUFDLEtBQUssRUFBRSxHQUFHLENBQUMsTUFBTSxDQUFDLE1BQU0sQ0FBQyxDQUFDO3dCQUMxRixVQUFVLENBQUMsSUFBSSxDQUFDLEdBQUcsQ0FBQyxPQUFPLENBQUMsTUFBTSxDQUFDLElBQUksQ0FBQyxDQUFDO3dCQUN6QyxHQUFHLENBQUMsWUFBWSxDQUFDLFVBQVUsRUFBRSxDQUFDLEVBQUUsQ0FBQyxDQUFDLENBQUM7cUJBQ3BDO29CQUNELGFBQWEsQ0FBQyxNQUFNLEdBQUcsS0FBSyxDQUFDO2lCQUM5QjtnQkFDRCxJQUFJLE9BQU8sRUFBRTtvQkFBRSxPQUFPLENBQUMsR0FBRyxDQUFDLFdBQVcsRUFBRSxPQUFPLENBQUMsTUFBTSxDQUFDLEtBQUssRUFBRSxPQUFPLENBQUMsTUFBTSxDQUFDLE1BQU0sQ0FBQyxDQUFDO2lCQUFFO2dCQUV2RixZQUFZLENBQUMsUUFBUSxHQUFHLEtBQUssQ0FBQztnQkFDOUIsWUFBWSxDQUFDLFFBQVEsR0FBRyxLQUFLLENBQUM7Z0JBQzlCLGVBQWUsQ0FBQyxLQUFLLEdBQUcsQ0FBQyxDQUFDO1lBQzVCLENBQUMsQ0FBQSxDQUFDLENBQUM7WUFFSCxZQUFZLENBQUMsZ0JBQWdCLENBQUMsT0FBTyxFQUFFLEdBQVMsRUFBRTtnQkFDaEQsV0FBVyxDQUFDLE1BQU0sR0FBRyxJQUFJLENBQUM7Z0JBQzFCLGFBQWEsQ0FBQyxNQUFNLEdBQUcsSUFBSSxDQUFDO1lBQzlCLENBQUMsQ0FBQyxDQUFDO1FBQ0wsQ0FBQztLQUFBO0lBU0QsU0FBUyxZQUFZLENBQUksS0FBYztRQUNyQyxNQUFNLE9BQU8sR0FBaUIsRUFBRSxDQUFDO1FBQ2pDLEtBQUssTUFBTSxHQUFHLElBQUksS0FBSyxFQUFFO1lBQ3ZCLE1BQU0sSUFBSSxHQUFXLEdBQUcsQ0FBQztZQUN6QixNQUFNLEtBQUssR0FBVyxLQUFLLENBQUMsR0FBRyxDQUFDLENBQUM7WUFDakMsT0FBTyxDQUFDLElBQUksQ0FBQyxFQUFFLElBQUksRUFBRSxLQUFLLEVBQUUsQ0FBQyxDQUFDO1NBQy9CO1FBQ0QsT0FBTyxPQUFPLENBQUM7SUFDakIsQ0FBQztJQStCRCxTQUFlLEtBQUs7O1lBQ2xCLE9BQU8sSUFBSSxPQUFPLENBQU8sQ0FBQyxPQUFtQixFQUFRLEVBQUU7Z0JBQ3JELElBQUksT0FBTyxxQkFBcUIsS0FBSyxVQUFVLEVBQUU7b0JBQy9DLHFCQUFxQixDQUFDLE9BQU8sQ0FBQyxDQUFDO2lCQUNoQztxQkFBTSxJQUFJLE9BQU8sWUFBWSxLQUFLLFVBQVUsRUFBRTtvQkFDN0MsWUFBWSxDQUFDLE9BQU8sQ0FBQyxDQUFDO2lCQUN2QjtxQkFBTSxJQUFJLE9BQU8sVUFBVSxLQUFLLFVBQVUsRUFBRTtvQkFDM0MsVUFBVSxDQUFDLE9BQU8sQ0FBQyxDQUFDO2lCQUNyQjtxQkFBTTtvQkFDTCxPQUFPLEVBQUUsQ0FBQztpQkFDWDtZQUNILENBQUMsQ0FBQyxDQUFDO1FBQ0wsQ0FBQztLQUFBOzs7Ozs7Ozs7Ozs7Ozs7OztZQXpORCxLQUFLLEVBQUUsQ0FBQyxLQUFLLENBQUMsT0FBTyxDQUFDLEtBQUssQ0FBQyxDQUFDIn0=

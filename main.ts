@@ -15,7 +15,7 @@ export type Progress = (completed: number, total: number) => Promise<boolean>;
 export interface Options {
   progress?: Progress;
   verbose?: boolean;
-  ttf_file: Uint8Array;
+  font_file: Uint8Array;
   size?: number;
   charset?: string;
   type?: msdfgen.Type;
@@ -46,7 +46,7 @@ export default async function main(options: Options): Promise<Results> {
   if (ft_error !== FT.Err.Ok) { throw new Error(FT.Error_String(ft_error)); }
 
   const ft_face: FT.Face = new FT.Face();
-  ft_error = FT.New_Memory_Face(ft_library, options.ttf_file, 0, ft_face);
+  ft_error = FT.New_Memory_Face(ft_library, options.font_file, 0, ft_face);
   if (ft_error !== FT.Err.Ok) { throw new Error(FT.Error_String(ft_error)); }
 
   const ft_scale: number = size / ft_face.units_per_EM; // font units to pixels
@@ -58,8 +58,8 @@ export default async function main(options: Options): Promise<Results> {
     ascender: ft_face.ascender * ft_scale,
     descender: ft_face.descender * ft_scale,
     line_advance: ft_face.height * ft_scale,
-    page: { name: "", w: 0, h: 0 }, // name set by export, w and h set by maxrects pack
-    glyphs: {}
+    page: { name: "", w: 0, h: 0 }, // name set by export, w and h set by pack
+    glyphs: []
   };
 
   const glyphs: Glyph[] = [];
@@ -79,19 +79,21 @@ export default async function main(options: Options): Promise<Results> {
     const ax: number = ft_face.glyph.advance.x * ft_scale;
     const ay: number = ft_face.glyph.advance.y * ft_scale;
   
-    // round texture size up to whole pixels
-    const tw: number = w === 0 ? 0 : Math.ceil(w + 2 * range);
-    const th: number = h === 0 ? 0 : Math.ceil(h + 2 * range);
+    const tw: number = w === 0 ? 0 : w + 2 * range;
+    const th: number = h === 0 ? 0 : h + 2 * range;
   
-    const glyph_json: GlyphJSON = {
+    const glyph_json: FontGlyphJSON = {
       char, code, w, h,
       hbx, hby, vbx, vby, ax, ay,
       tx: 0, ty: 0, tw, th // tx and ty set by pack
     };
   
-    const glyph_bitmap: Bitmap = new Bitmap(tw, th);
+    // round texture size up to whole pixels
+    const glyph_bitmap: Bitmap = new Bitmap(Math.ceil(tw), Math.ceil(th));
   
     const shape: msdfgen.Shape = new msdfgen.Shape();
+    shape.inverseYAxis = true;
+
     let contour: msdfgen.Contour | null = null;
     let start: msdfgen.Point2 | null = null;
   
@@ -132,7 +134,7 @@ export default async function main(options: Options): Promise<Results> {
     msdfgen.edgeColoringSimple(shape, angle_threshold);
   
     const ox: number = hbx - range;
-    const oy: number = hby - range - h;
+    const oy: number = hby + range - glyph_bitmap.height;
   
     // msdfgen transform
     // x' = (x + .5) / scale.x - translate.x;
@@ -142,7 +144,7 @@ export default async function main(options: Options): Promise<Results> {
   
     switch (type) {
     case msdfgen.Type.SDF:
-      const sdf: msdfgen.BitmapFloat = new msdfgen.BitmapFloat(tw, th);
+      const sdf: msdfgen.BitmapFloat = new msdfgen.BitmapFloat(glyph_bitmap.width, glyph_bitmap.height);
       msdfgen.generateSDF(sdf, shape, range, scale, translate);
       for (let y = 0; y < sdf.height(); ++y) {
         for (let x = 0; x < sdf.width(); ++x) {
@@ -151,7 +153,7 @@ export default async function main(options: Options): Promise<Results> {
       }
       break;
     case msdfgen.Type.PSDF:
-      const psdf: msdfgen.BitmapFloat = new msdfgen.BitmapFloat(tw, th);
+      const psdf: msdfgen.BitmapFloat = new msdfgen.BitmapFloat(glyph_bitmap.width, glyph_bitmap.height);
       msdfgen.generatePseudoSDF(psdf, shape, range, scale, translate);
       for (let y = 0; y < psdf.height(); ++y) {
         for (let x = 0; x < psdf.width(); ++x) {
@@ -160,7 +162,7 @@ export default async function main(options: Options): Promise<Results> {
       }
       break;
     case msdfgen.Type.MSDF:
-      const msdf: msdfgen.BitmapFloatRGB = new msdfgen.BitmapFloatRGB(tw, th);
+      const msdf: msdfgen.BitmapFloatRGB = new msdfgen.BitmapFloatRGB(glyph_bitmap.width, glyph_bitmap.height);
       msdfgen.generateMSDF(msdf, shape, range, scale, translate, msdf_edge_threshold);
       for (let y = 0; y < msdf.height(); ++y) {
         for (let x = 0; x < msdf.width(); ++x) {
@@ -172,14 +174,14 @@ export default async function main(options: Options): Promise<Results> {
     default: throw new Error();
     }
 
-    font_json.glyphs[code] = glyph_json;
+    font_json.glyphs.push(glyph_json);
     glyphs.push({ json: glyph_json, bitmap: glyph_bitmap });
 
     const stop: boolean = await progress(index + 1, charset.length);
     if (stop) { break; }
   }
 
-  const kernings: KerningJSON[] = [];
+  const kernings: FontKerningJSON[] = [];
   const kerning: FT.Vector = new FT.Vector();
   for (const char_a of charset) {
     const a: number = char_a.charCodeAt(0);
@@ -189,7 +191,7 @@ export default async function main(options: Options): Promise<Results> {
       ft_error = FT.Get_Kerning(ft_face, a, b, FT.KERNING.DEFAULT, kerning);
       if (ft_error !== FT.Err.Ok) { throw new Error(FT.Error_String(ft_error)); }
       if (kerning.x !== 0 || kerning.y !== 0) {
-        kernings.push({ a, b, x: kerning.x, y: kerning.y });
+        kernings.push({ a, b, x: kerning.x || undefined, y: kerning.y || undefined });
       }
     }
   }
@@ -205,13 +207,13 @@ export default async function main(options: Options): Promise<Results> {
 
   // find minimum font texture size
   for (const glyph of glyphs) {
-    font_json.page.w = Math.max(font_json.page.w, pow2ceil(glyph.json.tw));
-    font_json.page.h = Math.max(font_json.page.h, pow2ceil(glyph.json.th));
+    font_json.page.w = Math.max(font_json.page.w, pow2ceil(glyph.bitmap.width));
+    font_json.page.h = Math.max(font_json.page.h, pow2ceil(glyph.bitmap.height));
   }
 
   // sort glyphs descending by the longest texture side
   glyphs.sort((a: Glyph, b: Glyph): number => {
-    return Math.max(b.json.tw, b.json.th) - Math.max(a.json.tw, a.json.th);
+    return Math.max(b.bitmap.width, b.bitmap.height) - Math.max(a.bitmap.width, a.bitmap.height);
   });
 
   let fit: boolean = false;
@@ -221,8 +223,8 @@ export default async function main(options: Options): Promise<Results> {
     const pack: Pack = new Pack(font_json.page.w + gap, font_json.page.h + gap);
     fit = true;
     for (const glyph of glyphs) {
-      if (glyph.json.tw === 0 && glyph.json.th === 0) { continue; }
-      const rect: Rect | null = pack.find(glyph.json.tw + gap, glyph.json.th + gap);
+      if (glyph.bitmap.width === 0 && glyph.bitmap.height === 0) { continue; }
+      const rect: Rect | null = pack.find(glyph.bitmap.width + gap, glyph.bitmap.height + gap);
       if (rect === null) { fit = false; break; }
       glyph.json.tx = rect.x;
       glyph.json.ty = rect.y;
@@ -243,7 +245,7 @@ export default async function main(options: Options): Promise<Results> {
 }
 
 interface Glyph {
-  json: GlyphJSON;
+  json: FontGlyphJSON;
   bitmap: Bitmap;
 }
 
@@ -262,17 +264,23 @@ function pow2ceil(v: number): number {
 export interface FontJSON {
   name: string;
   size: number;
-  type: string;
+  type: msdfgen.Type;
   pad?: number | [number,number] | [number,number,number,number];
   ascender: number;
   descender: number;
   line_advance: number;
-  page: { w: number; h: number; name: string; }
-  glyphs: {[key: string]: GlyphJSON};
-  kernings?: KerningJSON[];
+  page: FontPageJSON;
+  glyphs: FontGlyphJSON[];
+  kernings?: FontKerningJSON[];
 }
 
-export interface GlyphJSON {
+export interface FontPageJSON {
+  name: string;
+  w: number;
+  h: number;
+}
+
+export interface FontGlyphJSON {
   char: string;
   code: number;
   w: number; // width
@@ -289,11 +297,11 @@ export interface GlyphJSON {
   th: number; // texture height
 }
 
-export interface KerningJSON {
+export interface FontKerningJSON {
   a: number; // character code
   b: number; // character code
-  x: number; // kerning x
-  y: number; // kerning y
+  x?: number; // kerning x
+  y?: number; // kerning y
 }
 
 export class Rect {

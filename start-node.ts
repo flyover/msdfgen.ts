@@ -34,40 +34,60 @@ async function start(): Promise<void> {
     .option("--msdf-edge-threshold <value>", "msdf edge threshold", parseFloat, main.DEFAULT_MSDF_EDGE_THRESHOLD)
     .parse(process.argv);
 
-  const progress: main.Progress = async (completed: number, total: number): Promise<boolean> => {
-    if (verbose) { process.stdout.write(`\r${Math.round(100 * completed / total)}%`); }
-    return false;
-  };
-
   const verbose: boolean = commander.verbose;
-
-  const ttf_path: string = commander.font;
+  const font_path: string = commander.font;
   // const fs = require("fs");
   // const fs = await import("fs");
-  const ttf_file: Uint8Array = new Uint8Array(fs.readFileSync(ttf_path));
-
+  const font_file: Uint8Array = new Uint8Array(fs.readFileSync(font_path));
   const size: number = commander.size;
   const charset: string = commander.charset;
   const type: main.msdfgen.Type = commander.type;
   const range: number = commander.range;
 
-  const options: main.Options = { progress, verbose, ttf_file, size, charset, type, range };
+  let cancel: boolean = false;
+
+  const progress: main.Progress = async (completed: number, total: number): Promise<boolean> => {
+    if (verbose) { process.stdout.write(`\r${Math.round(100 * completed / total)}%`); }
+    await blink(); // allow refresh
+    return cancel; // return true to stop
+  };
+
+  const options: main.Options = { progress, verbose, font_file, size, charset, type, range };
+
+  const listen_cancel: NodeJS.SignalsListener = (): void => { cancel = true; };
+  process.on("SIGINT", listen_cancel);
 
   const results: main.Results = await main.default(options);
 
-  if (verbose) { process.stdout.write(`\r100%\n`); }
+  process.off("SIGINT", listen_cancel);
 
-  const json_path: string = ttf_path.replace(/\.(ttf|otf)$/i, ".json");
-  const png_path: string = ttf_path.replace(/\.(ttf|otf)$/i, ".png");
+  if (verbose) { process.stdout.write(`\n`); }
+
+  const json_path: string = font_path.replace(/\.(ttf|otf)$/i, ".json");
+  const bitmap_path: string = font_path.replace(/\.(ttf|otf)$/i, ".png");
 
   if (results.json) {
-    results.json.page.name = png_path.split("/").pop() || png_path; // relative to json directory
+    results.json.page.name = bitmap_path.split("/").pop() || bitmap_path; // relative to json directory
     fs.writeFileSync(json_path, JSON.stringify(results.json, null, "\t"));
   }
   if (verbose) { console.log(json_path, results.json.page.name); }
 
   if (results.bitmap.width > 0 && results.bitmap.height > 0) {
-    fs.writeFileSync(png_path, PNG.encode(results.bitmap));
+    fs.writeFileSync(bitmap_path, PNG.encode(results.bitmap));
   }
-  if (verbose) { console.log(png_path, results.bitmap.width, results.bitmap.height); }
+  if (verbose) { console.log(bitmap_path, results.bitmap.width, results.bitmap.height); }
+}
+
+async function blink(): Promise<void> {
+  return new Promise<void>((resolve: () => void): void => {
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(resolve);
+    } else if (typeof setImmediate === "function") {
+      setImmediate(resolve);
+    } else if (typeof setTimeout === "function") {
+      setTimeout(resolve);
+    } else {
+      resolve();
+    }
+  });
 }
