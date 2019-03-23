@@ -85,7 +85,7 @@ export default async function main(options: Options): Promise<Results> {
     const glyph_json: FontGlyphJSON = {
       char, code, w, h,
       hbx, hby, vbx, vby, ax, ay,
-      tx: 0, ty: 0, tw, th // tx and ty set by pack
+      site: { x: 0, y: 0, w: tw, h: th }, // tx and ty set by pack
     };
   
     // round texture size up to whole pixels
@@ -226,8 +226,8 @@ export default async function main(options: Options): Promise<Results> {
       if (glyph.bitmap.width === 0 && glyph.bitmap.height === 0) { continue; }
       const rect: Rect | null = pack.find(glyph.bitmap.width + gap, glyph.bitmap.height + gap);
       if (rect === null) { fit = false; break; }
-      glyph.json.tx = rect.x;
-      glyph.json.ty = rect.y;
+      glyph.json.site.x = rect.x;
+      glyph.json.site.y = rect.y;
     }
     if (!fit) {
       font_json.page.w <= font_json.page.h ? font_json.page.w <<= 1 : font_json.page.h <<= 1;
@@ -238,7 +238,7 @@ export default async function main(options: Options): Promise<Results> {
   const font_bitmap: Bitmap = new Bitmap(font_json.page.w, font_json.page.h);
 
   for (const glyph of glyphs) {
-    font_bitmap.blit(glyph.bitmap, glyph.json.tx, glyph.json.ty);
+    font_bitmap.blit(glyph.bitmap, glyph.json.site.x, glyph.json.site.y);
   }
 
   return { json: font_json, bitmap: font_bitmap };
@@ -291,10 +291,14 @@ export interface FontGlyphJSON {
   vby: number; // vert bearing y
   ax: number; // advance x
   ay: number; // advance y
-  tx: number; // texture x
-  ty: number; // texture y
-  tw: number; // texture width
-  th: number; // texture height
+  site: FontGlyphSiteJSON;
+}
+
+export interface FontGlyphSiteJSON {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 export interface FontKerningJSON {
